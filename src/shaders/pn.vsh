@@ -1,15 +1,15 @@
-#version 450 core
+#version 440 core
 
 in vec3 location;
 in mat4 model;
 in float intensity;
 
-out VertexData {
-	float intensity;
-} VertexOut;
+out VData {
+	flat float intensityy;
+} VertexOutt;
 
 void main()
 {
-	VertexOut.intensity=intensity;
+	VertexOutt.intensityy=intensity;
 	gl_Position=model * vec4(location.xyz,1);
 }

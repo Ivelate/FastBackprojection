@@ -72,7 +72,10 @@ public abstract class SimpleShaderProgram
 		
 		if(VERBOSE){
 			String status =  glGetProgramInfoLog(this.programIndex , GL_LINK_STATUS); //Verbose
-			System.out.println(status);
+			if(!status.isEmpty()) {
+				System.out.println("Shader link error, shader FS="+fragmentR+" VS="+vertexR);
+				System.out.println(status);
+			}
 		}
 	}
 	public SimpleShaderProgram(String vertexR,String fragmentR)
@@ -87,7 +90,10 @@ public abstract class SimpleShaderProgram
 		
 		if(VERBOSE){
 			String status = glGetShaderInfoLog(shader, 1000);
-			System.out.println(status);
+			if(!status.isEmpty()) {
+				System.out.println("Shader compilation error for "+cont);
+				System.out.println(status);
+			}
 		}
 		
 		return shader;

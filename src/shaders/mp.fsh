@@ -1,4 +1,4 @@
-#version 450 core
+#version 440 core
 
 layout(binding=0 , r32ui) uniform readonly uimage3D voxelStorage;
 uniform int voxelRes;

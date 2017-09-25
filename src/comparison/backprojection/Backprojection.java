@@ -54,7 +54,10 @@ public class Backprojection
 			backprojected=(INVERSE&&numThreads>1)?new BackprojectionConcurrentValueStorer(resolution):new BackprojectionNonConcurrentValueStorer(resolution);
 			do
 			{
-				TransientImage[] transientImages=initTransientImages(params.inputFolder,params.acceptedFileName,params.lasers,params.fov,params.streakYratio,params.t_delta,params.t0,params.camera,params.lookTo,params.laserOrigin,params.OVERRIDE_TRANSIENT_WALL_POINTS,imageCount,transientImageChunkSize);
+				TransientImage[] transientImages=params.CUSTOM_TRANSIENT_IMAGES==null?
+						initTransientImages(params.inputFolder,params.acceptedFileName,params.lasers,params.fov,params.streakYratio,params.t_delta,params.t0,params.camera,params.lookTo,params.laserOrigin,params.OVERRIDE_TRANSIENT_WALL_POINTS,imageCount,transientImageChunkSize) :
+							params.CUSTOM_TRANSIENT_IMAGES;
+				if(params.CUSTOM_TRANSIENT_IMAGES!=null) transientImageChunkSize=transientImages.length; //All transient images are loaded
 				
 				if(transientImages.length>0)
 				{

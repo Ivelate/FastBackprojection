@@ -27,7 +27,9 @@ public class TransientVoxelizationParams
 	public boolean USE_HALF_ELLIPSOIDS=true; //Considering that only half of an ellipsoid can be seen at the same time (because the wall occludes the rest) this can be used to save computations. If some of the scene wall points doesn't share the same normal THIS NO LONGER APPLIES!! so it should be set at false at expense of computation power
 											 //(and next time record just a wall pls)
 	public float CLAMP_INTENSITY_GREATER_THAN=-1; //Max streak intensity threshold to consider, all values above this are discarded (none are discarded if this value is <0)
-		
+	
+	//UNIMPLEMENTED public float CLAMP_TIME_COORD_LESS_THAN=-1; //Min time coord to consider, all values above this are discarded (none are discarded if this value is <0)
+	
 	//Ortho matrix size
 	public Matrix4f orthoMatrix=null; //It can be custom-provided
 	public float voxelSize=0; //Only need to set if if orthoMatrix!=null
@@ -90,6 +92,7 @@ public class TransientVoxelizationParams
 	public boolean save3DRaw=false;	public File filename3draw=null; //Save full 3D voxelization flag, and name without filtering
 	public boolean backprojectCpu=true; //The GPU laplacian filter is faster but worse. You can implement a good GPU laplacian filter for maximum speed :D
 	public File executionInfoFile=null;
+	public boolean PRINT_TRANSIENT_IMAGES=false; //Normally used as debug. Prints each transient image used to reconstruct the final volume
 	
 	public Vector3f[] OVERRIDE_TRANSIENT_WALL_POINTS=null; //Overrides all transient image wall points for this values
 	

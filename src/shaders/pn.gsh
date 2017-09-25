@@ -1,4 +1,4 @@
-#version 450 core
+#version 440 core
 
 uniform mat4 viewProj;
 
@@ -7,13 +7,13 @@ layout (triangle_strip, max_vertices=3) out;
 
 out VertexData {
     vec3 Normal;
-    int dominantAxis;
-    float intensity;
+    flat int dominantAxis;
+    flat float intensity;
 } VertexOut;
 
-in VertexData {
-	float intensity;
-} VertexIn[3];
+in VData {
+	flat float intensityy;
+} VertexInn[3];
 
 /*const mat4 swizzlers[3] =  mat4[3](
                      mat4( vec4(1,0,0,0) , vec4(0,1,0,0) , vec4(0,0,1,0) , vec4(0,0,0,1)),
@@ -42,7 +42,7 @@ void main()
     gl_Position = 	viewProj * swizzledPos;*/
     VertexOut.Normal = normal;
     VertexOut.dominantAxis=dominantAxis;
-    VertexOut.intensity=VertexIn[i].intensity;
+    VertexOut.intensity=VertexInn[i].intensityy;
  
     // done with the vertex
     EmitVertex();

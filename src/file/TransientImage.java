@@ -168,13 +168,17 @@ public class TransientImage
 	 */
 	public void printToFile(File outFile) throws IOException
 	{
+		printToFile(outFile,this.maxValue);
+	}
+	public void printToFile(File outFile,float maxValue) throws IOException
+	{
 		BufferedImage off_Image =
 				  new BufferedImage(width, height,
 				                    BufferedImage.TYPE_INT_RGB);
 		
 		for(int x=0;x<width;x++) for(int y=0;y<height;y++) {
 
-			int c=(int)((data[x][y][0]*255) / this.maxValue);
+			int c=data[x][y][0]<maxValue?(int)((data[x][y][0]*255) / maxValue):0; //If intensity exceeds maximum intensity, image has been clamped
 			//|TODO unshit
 			off_Image.setRGB(x, y, c<<16 | c<< 8 | c);
 		}

@@ -10,6 +10,7 @@ import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
+import comparison.backprojection.Backprojection;
 import file.CustomValuesTransientImage;
 import geometry.Sphere;
 import visualizer.TransientVisualizer;
@@ -20,6 +21,18 @@ import visualizer.TransientVisualizer;
  */
 public class MatlabFacade 
 {
+	
+	//Facade for REVEAL, without saving dumps to disk
+	public static int[] performGpuBackprojectionReveal(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,double qualityWeight,String extraArgs[]) throws IOException, LWJGLException
+	{
+		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,null,qualityWeight,null,null,extraArgs);
+	}
+	public static int[] performGpuBackprojectionReveal(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,double qualityWeight,String infoDumpFile,String extraArgs[]) throws IOException, LWJGLException
+	{
+		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,null,qualityWeight,infoDumpFile,null,extraArgs);
+	}
+	
+	
 	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize) throws IOException, LWJGLException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,null);
@@ -38,6 +51,11 @@ public class MatlabFacade
 	}
 	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile,String dump2Dname) throws IOException, LWJGLException
 	{
+		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,dump3Dname,qualityWeight,infoDumpFile,dump2Dname,null);
+	}
+	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile,String dump2Dname,String[] extraArgs) throws IOException, LWJGLException
+	{
+		//for(int i=0;i<extraArgs.length;i++) System.out.println("Extra args: "+extraArgs[i]);
 		System.out.println("Starting Java part");
 		System.setProperty("org.lwjgl.util.Debug", "true");
 		TransientVoxelization.loadNatives();
@@ -102,12 +120,14 @@ public class MatlabFacade
 			//NEED THE WALL DIR AND NORMAL!
 			timgs[i].setParamsForCamera(camOrigin, null, wallDir, wallNormal, 0, lasers[i], 0, 1,(float)timeshift);
 			timgs[i].setLaserHitTime(Vector3f.sub(lasers[i], laserOrigin, null).length());
-			//timgs[i].printToFile(new File("zz_transient"+i+".png"));
+			//timgs[i].printToFile(new File("zz_transient_"+lasers[i].x+"_"+lasers[i].y+"_"+lasers[i].z+".png"));
 		}
 		
 		System.out.println("Data parsed to java data structures. Beginning backprojection execution");
 		TransientVoxelizationParams params=new TransientVoxelizationParams();
+		if(extraArgs!=null) TransientVoxelization.parseArgsIntoParams(params, extraArgs,true); //Incomplete params == true, so no image storing by default will be set.
 		//Most of those params will not be even needed, as the transient imgs are already initcialized
+		params.USE_HALF_ELLIPSOIDS=false; //Custom wall points mean custom normals... which means its better to use the complete ellipsoids. FEEL FREE TO CHANGE THIS!! It reduces perfomance to a half, and its only useful on some situations.
 		params.AUTO_CLEAN=false; params.FORCE_2D_BACKPROJECT=true; params.AUTO_MANAGE_DISPLAY=true;
 		params.CUSTOM_TRANSIENT_IMAGES=timgs;
 		params.camera=camOrigin; params.lookTo=lookTo; params.laserOrigin=laserOrigin;
@@ -138,21 +158,10 @@ public class MatlabFacade
 		TransientVoxelization tv=new TransientVoxelization(params);
 		int[] data3d=tv.get3DTextureData();
 		tv.cleanup();
-		/*System.out.println(params.orthoMatrix);
-		System.out.println(params.VOXEL_RESOLUTION);
-		
-		Matrix4f invOrtho=Matrix4f.invert(orthoMatrix, null);
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(1,1,1,1), null));
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(-1,1,1,1), null));
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(1,-1,1,1), null));
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(-1,-1,1,1), null));
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(1,1,-1,1), null));
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(-1,1,-1,1), null));
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(1,-1,-1,1), null));
-		System.out.println(Matrix4f.transform(invOrtho, new Vector4f(-1,-1,-1,1), null));*/
-		//throw new TransientVoxelizationException("");
+
 		return data3d;		
 	}
+
 	public static void generateDumpForRawData(int[] rawData,String dump3Dname,int xstart,int xend,int ystart,int yend,int zstart,int zend) throws IOException
 	{
 		int VOXEL_RESOLUTION=(int)Math.round(Math.cbrt(rawData.length));

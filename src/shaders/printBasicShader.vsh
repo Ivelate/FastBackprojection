@@ -1,4 +1,4 @@
-#version 450 core
+#version 440 core
 
 const vec3 NormalTable[6]=vec3[](
 							vec3(0,0,1),

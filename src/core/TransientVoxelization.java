@@ -141,7 +141,7 @@ public class TransientVoxelization
 					file=new File(folder,name);
 					cont++;
 				}while(file.exists());
-				System.out.println("Saving texture to file "+file.getAbsolutePath());
+				if(this.params.saveImage || this.params.save3DDump || this.params.save3DRaw || this.params.save2DRaw) System.out.println("Saving texture to file "+file.getAbsolutePath());
 			}
 			
 			if(this.params.saveImage) {
@@ -654,8 +654,6 @@ public class TransientVoxelization
 						if(maxIntensity<imgs[i].getMaxValue()) maxIntensity=imgs[i].getMaxValue();
 					}
 				}
-				//Clamp intensity if needed
-				if(params.CLAMP_INTENSITY_GREATER_THAN>0&&maxIntensity>params.CLAMP_INTENSITY_GREATER_THAN) maxIntensity=params.CLAMP_INTENSITY_GREATER_THAN;
 			}
 			//If using custom defined transient images, just find the max intensity over all of them
 			else
@@ -663,6 +661,10 @@ public class TransientVoxelization
 				imgs=params.CUSTOM_TRANSIENT_IMAGES;
 				for(TransientImage img:imgs) if(maxIntensity<img.getMaxValue()) maxIntensity=img.getMaxValue();
 			}
+			
+			//Clamp intensity if needed
+			if(params.CLAMP_INTENSITY_GREATER_THAN>0&&maxIntensity>params.CLAMP_INTENSITY_GREATER_THAN) maxIntensity=params.CLAMP_INTENSITY_GREATER_THAN;
+			
 			time[0]=(int)(System.currentTimeMillis()-ti_streaks);
 			
 			System.out.println("Max intensity: "+maxIntensity);
@@ -679,6 +681,11 @@ public class TransientVoxelization
 					long loadI=System.currentTimeMillis();
 					imgs[i]=TransientVoxelization.initTransientImage(files[i], t_delta,t0,intensityUnit, lasers,fov,streakyratio,camera,lookTo,wallDir,wallNormal,laserOrigin,afn,params.OVERRIDE_TRANSIENT_WALL_POINTS,transientStorage);
 					ti_ellipsoidcreation+=System.currentTimeMillis()-loadI; //Correcting time (loading is not taken in account)
+				}
+				if(params.PRINT_TRANSIENT_IMAGES){
+					long printI=System.currentTimeMillis();
+					imgs[i].printToFile(new File("StreakImage_"+i+".png"),maxIntensity);
+					ti_ellipsoidcreation+=System.currentTimeMillis()-printI; //Correcting time (printing is not taken in account)
 				}
 				int ellipsoidsPerPixel=params.ELLIPSOID_PER_PIXEL_THRESHOLD_WEIGHT<=0?params.ELLIPSOIDS_PER_PIXEL:(int)Math.round(params.ELLIPSOID_PER_PIXEL_THRESHOLD_WEIGHT*imgs[i].getDeltaTime()/this.voxelSize);
 				if(ellipsoidsPerPixel<=0) ellipsoidsPerPixel=1;
@@ -899,7 +906,12 @@ public class TransientVoxelization
 	/**
 	 * Parses all input <args> and stores it into our handy class <params>. If false is returned, a soft program exit is requested
 	 */
-	public static boolean parseArgsIntoParams(TransientVoxelizationParams params,String[] args)
+	public static boolean parseArgsIntoParams(TransientVoxelizationParams params,String[] args) 
+	{
+		return parseArgsIntoParams(params,args,false);
+	}
+	public static boolean parseArgsIntoParams(TransientVoxelizationParams params,String[] args,boolean incompleteParams) //Incomplete params is set to true if this params are not the only ones which are going to be set. It overrides
+																														 //standard behaviours such as forcing one image to be printed forcefully and so on
 	{
 		for(int i=0;i<args.length;i++)
 		{
@@ -1087,6 +1099,9 @@ public class TransientVoxelization
 				case "-clampIntensityGreaterThan":
 					params.CLAMP_INTENSITY_GREATER_THAN=Float.parseFloat(args[++i]);
 					break;
+				case "-printTransientImages":
+					params.PRINT_TRANSIENT_IMAGES=true;
+					break;
 				default:
 					System.err.println("Unknown arg "+expr);
 				}
@@ -1095,9 +1110,13 @@ public class TransientVoxelization
 				System.err.println("Error parsing arg "+expr);
 			}
 		}
-		if(!params.save3DDump&&!params.saveImage&&!params.save3DRaw&&!params.save2DRaw){
-			System.out.println("No output save especified. Saving image by default");
-			params.saveImage=true;
+		
+		if(!incompleteParams)
+		{
+			if(!params.save3DDump&&!params.saveImage&&!params.save3DRaw&&!params.save2DRaw){
+				System.out.println("No output save especified. Saving image by default");
+				params.saveImage=true;
+			}
 		}
 		
 		//Parsing laser file if its provided

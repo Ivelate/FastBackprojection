@@ -1,4 +1,4 @@
-#version 450 core
+#version 440 core
 
 const vec3 orthoLight=normalize(vec3(1,0,1));
 
