@@ -32,6 +32,7 @@ import ivengine.IvEngine;
 import ivengine.MatrixHelper;
 import shader.PrintingBasicShader;
 import shader.VisualizationShader;
+import visualizer.gui.TransientVoxelizationGuiFrame;
 
 
 /*import ucar.nc2.Dimension;
@@ -475,12 +476,19 @@ public class TransientVisualizer
 	
 	public static void main(String[] args) throws LWJGLException, IOException
 	{
-		String route="C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/spadres/gen_ht_dump.dump";/*"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/gpures_new/gandalfUpGpuResult.dump";*///"D:/glab/TransientVoxelization/paper/results/bunny/gen_dump.dump";//"result_004.png.dump";//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/gpures/gandalfUpGpuResult.dump";//"res/result_316.png.dump";//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/MIT_data/fastcamreference/fastcam_lastest/reconstruction/result_020.png.dump";
+		String route=null;//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/spadres/gen_ht_dump.dump";/*"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/gpures_new/gandalfUpGpuResult.dump";*///"D:/glab/TransientVoxelization/paper/results/bunny/gen_dump.dump";//"result_004.png.dump";//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/gpures/gandalfUpGpuResult.dump";//"res/result_316.png.dump";//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/MIT_data/fastcamreference/fastcam_lastest/reconstruction/result_020.png.dump";
 		/*if(args.length<1) {
 			System.err.println("Not enough args");
 			System.exit(1);
 		}*/
 		if(args.length>0)route=args[0];
+		else{
+			TransientVoxelizationGuiFrame w=new TransientVoxelizationGuiFrame();
+			if(w.waitForClose()){
+				route=w.getSelectedFile();
+			}
+			else System.exit(0);
+		}
 		try{
 			TransientVoxelization.loadNatives();
 		}
