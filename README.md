@@ -8,3 +8,6 @@ Opt. Express 25, 11574-11583 (2017)
 For any question or found issue please send an email to: victorarella AT gmail DOT com
 
 (c) 2017 Victor Arellano, Diego Gutierrez and Adrian Jarabo.
+
+
+Check the releases: https://github.com/Ivelate/FastBackprojection/releases 
