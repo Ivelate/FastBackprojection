@@ -19,11 +19,12 @@ public class AcceptedFileName
 	}
 	public boolean isAccepted(File file)
 	{
-		if(file.getName().endsWith(this.endsWith)){
+		String fname=file.getName().toLowerCase();
+		if(fname.endsWith(this.endsWith)){
 			int occ=0;
-			for(int i=0;i<file.getName().length();i++)
+			for(int i=0;i<fname.length();i++)
 			{
-				if(file.getName().charAt(i)=='_') occ++;
+				if(fname.charAt(i)=='_') occ++;
 			}
 			
 			if(occ==this.underscoreNum) return true;

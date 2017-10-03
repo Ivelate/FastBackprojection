@@ -1,6 +1,7 @@
 package file;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferFloat;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
@@ -9,11 +10,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 import org.lwjgl.util.vector.Vector3f;
+
+import com.github.ivelate.JavaHDR.HDREncoder;
+import com.github.ivelate.JavaHDR.HDRImage;
+
 
 /**
  * Name change required. Decodes float files and creates transient images from them
@@ -35,6 +43,17 @@ public class HDRDecoder
 		System.exit(0);
 		return null;
 	}*/
+	public static TransientImage decodeFile(File file,float timeScale,float intensityUnit,Vector3f[] customWallPoints) throws IOException
+	{
+		return decodeFile(file,timeScale,intensityUnit,customWallPoints,null);
+	}
+	public static TransientImage decodeFile(File file,float timeScale,float intensityUnit,Vector3f[] customWallPoints,float[][][] data) throws IOException
+	{
+		//Using .float loading by default unless .hdr is explicitly specified
+		String fname=file.getName().toLowerCase();
+		if(fname.endsWith(".hdr")) return decodeHDRFile(file,timeScale,intensityUnit,customWallPoints,data);
+		else return decodeFloatFile(file,timeScale,intensityUnit,customWallPoints,data);
+	}
 	public static TransientImage decodeFloatFile(File file,float timeScale,float intensityUnit/*,int streak*/,Vector3f[] customWallPoints) throws IOException
 	{
 		return decodeFloatFile(file,timeScale,intensityUnit/*,streak*/,customWallPoints,null);
@@ -61,6 +80,72 @@ public class HDRDecoder
 		in.close();
 
 		return img;
+	}
+	public static TransientImage decodeHDRFile(File file,float timeScale,float intensityUnit/*,int streak*/,Vector3f[] customWallPoints,float[][][] data) throws IOException
+	{
+		//LOAD HDR IMAGE INTO A FLOAT ARRAY
+		// Create input stream
+		/*ImageInputStream input = ImageIO.createImageInputStream(file);
+		BufferedImage image=null;
+		try {
+		    // Get the reader
+		    Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+
+		    if (!readers.hasNext()) {
+		        throw new IllegalArgumentException("No reader for: " + file);
+		    }
+
+		    ImageReader reader = readers.next();
+
+		    try {
+		        reader.setInput(input);
+
+		        // Disable default tone mapping
+		        HDRImageReadParam param = (HDRImageReadParam) reader.getDefaultReadParam();
+		        param.setToneMapper(new NullToneMapper());
+
+		        // Read the image, using settings from param
+		        image = reader.read(0, param);
+		    }
+		    finally {
+		        // Dispose reader in finally block to avoid memory leaks
+		        reader.dispose();
+		    }
+		}
+		finally {
+		    // Close stream in finally block to avoid resource leaks
+		    input.close();
+		}
+
+		// Get float data
+		float[] rgb = ((DataBufferFloat) image.getRaster().getDataBuffer()).getData();*/
+		HDRImage hdrImg=HDREncoder.readHDR(file, true);
+		float[] rgb=hdrImg.getInternalData();
+		
+		//LOAD TRANSIENT IMAGE FROM FLOAT ARRAY
+		int width=hdrImg.getWidth(); //System.out.println(width);
+		int height=hdrImg.getHeight(); //System.out.println(height);
+		int channels=3; //System.out.println(channels);
+		if(data==null) data=new float[width][height][channels];
+
+		float max=0;
+		float min=Float.MAX_VALUE;
+		for(int h=0;h<height;h++)
+		{
+			for(int w=0;w<width;w++)
+			{
+				for(int c=0;c<channels;c++)
+				{
+					float d=rgb[(h*width + w)*3+c];
+					data[w][h][c]=d;
+					if(max<d) max=d;
+					if(d!=0&&d<min) min=d;
+				}
+			}
+		}
+		
+		return customWallPoints==null?new TransientImage(width,height,channels,timeScale,intensityUnit,data,max,min):
+			new CustomValuesTransientImage(width,height,channels,timeScale,intensityUnit,data,max,min,customWallPoints);
 	}
 	private static TransientImage loadTransientImageFromFloatFile(LittleEndianDataInputStream in,int width,int height,int channels,float timePerCoord,float intensityMultiplierUnit,Vector3f[] customWallPoints,float[][][] data) throws IOException 
 	{

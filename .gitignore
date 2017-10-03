@@ -27,6 +27,7 @@ bin/*
 res/*
 dumpTest/*
 .settings/*
+.hdr
 
 .classpath
 .project

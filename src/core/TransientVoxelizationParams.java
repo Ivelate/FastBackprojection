@@ -76,7 +76,8 @@ public class TransientVoxelizationParams
 	
 	//INPUT
 	public File inputFolder=new File("../../2016_LookingAroundCorners/bunny_final_multilaser_2b_highres"); 	//Input folder
-	public AcceptedFileName acceptedFileName=new AcceptedFileName(2,2,".float");						//Accepted input files
+	public boolean READ_HDR_FILES=true;
+	public AcceptedFileName acceptedFileName=new AcceptedFileName(2,2,READ_HDR_FILES?".hdr":".float");	//Accepted input files
 																										//Input format (current): SLICE_<laserIndex>_<scanlineIndex>.float
 																										//								   ^ from 1 to max
 																										//each float file contains an streak image
@@ -84,6 +85,7 @@ public class TransientVoxelizationParams
 	public boolean readLasersAsText=false; //if false, read the file in a binary format <float><float><float>... , if true, read the file in text format %d %d %d\n%d %d %d ...
 	
 	//OUTPUT
+	public boolean DEFAULT_SAVE_AS_HDR=false; //If no image name is specified, details if the default output is HDR or not
 	public File saveFolder=null; // null= execution folder
 	public boolean saveImage=false;		public File filename2d=null; //Save image 2D flag, and name
 	public boolean save2DRaw=false;	public File filename2draw=null; //Save image 2D without filtering

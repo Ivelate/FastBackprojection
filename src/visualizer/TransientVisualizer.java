@@ -46,9 +46,11 @@ public class TransientVisualizer
 	private static final int RES=512;
 	private static final double DEFAULT_MOUSE_SENSIVITY=15;
 	
+	
 	private VisualizerBoundingBox boundingBox;
 	
 	private int vbo;
+	private FloatBuffer currentBuffer=null;
 	private int cubesNum=0;
 	private int facesNum=0;
 	private boolean[][][] dataset=null;
@@ -71,10 +73,12 @@ public class TransientVisualizer
 	
 	private TimeManager TM=new TimeManager();
 	
-	public TransientVisualizer(String route) throws LWJGLException
+	public TransientVisualizer(TransientVisualizerParams params) throws LWJGLException
 	{
 		IvEngine.configDisplay(RES, RES, "Transient Visualizer", false, false, false);
-		initResources(route);
+		
+		this.screenRotationState=params.initialScreenRotationState;
+		initResources(params);
 		
 		boolean run=true;
 		//Mouse.setGrabbed(true);
@@ -118,9 +122,9 @@ public class TransientVisualizer
 				System.out.println("Redrawing...");
 				this.cubesNum=this.applyThreshold(this.dataset, this.currentThreshold);
 				GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-				FloatBuffer dataChunkBuffer=genDataChunk(this.dataset,this.cubesNum);
+				this.currentBuffer=genDataChunk(this.dataset,this.cubesNum);
 				GL15.glBufferData(GL15.GL_ARRAY_BUFFER,this.facesNum*6*4*4,this.norm_data==null?GL15.GL_STATIC_DRAW:GL15.GL_DYNAMIC_DRAW);
-				GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, dataChunkBuffer);
+				GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, this.currentBuffer);
 			}
 		}
 	}
@@ -209,15 +213,12 @@ public class TransientVisualizer
 	{
 		Display.destroy();
 	}
-	private void initResources(String route)
+	private void initResources(TransientVisualizerParams params)
 	{
 		try{
 			//this.dataset=loadDataset(new File("SPAR_raw_dotcloud.dcloud"));
-			this.norm_data=loadDataset(new File(//"result_010.png.dump"
-					//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/MIT_data/fastcamreference/fastcam_lastest/reconstruction/result_020.png.dump"
-					//"result_backprojection_112_dump.dump"
-					route
-					));
+			this.norm_data=params.overrideData==null?loadDataset(new File(params.route)):params.overrideData;
+
 			this.dataset=new boolean[norm_data.length][norm_data.length][norm_data.length];
 			this.cubesNum=this.applyThreshold(this.dataset, this.currentThreshold);
 			System.out.println("Model loaded. Res: "+norm_data.length);
@@ -237,9 +238,9 @@ public class TransientVisualizer
 		GL11.glEnable(GL_TEXTURE_2D);
 		vbo=GL15.glGenBuffers();
 		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-		FloatBuffer dataChunkBuffer=genDataChunk(this.dataset,this.cubesNum);
+		this.currentBuffer=genDataChunk(this.dataset,this.cubesNum);
 		GL15.glBufferData(GL15.GL_ARRAY_BUFFER,this.facesNum*6*4*4,this.norm_data==null?GL15.GL_STATIC_DRAW:GL15.GL_DYNAMIC_DRAW);
-		GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, dataChunkBuffer);
+		GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, this.currentBuffer);
 		PBS=new PrintingBasicShader();
 		VS=new VisualizationShader();
 		this.camera=new Camera(0.1f,1000,90,1);
@@ -341,6 +342,17 @@ public class TransientVisualizer
 	}
 	private FloatBuffer genDataChunk(boolean[][][] dataset,int cubesNum)
 	{
+		/*for(int x=0;x<dataset.length;x++)
+		{
+			for(int y=0;y<dataset.length;y++)
+			{
+				for(int z=0;z<dataset.length;z++)
+				{
+					dataset[x][y][z]=true;
+				}
+			}
+		}
+		cubesNum=dataset.length*dataset.length*6;*/
 		int DPT=4*3;
 		FloatBuffer fbuff=BufferUtils.createFloatBuffer(cubesNum*DPT*6*6);
 		float[] auxBuff=new float[DPT*2];
@@ -474,6 +486,11 @@ public class TransientVisualizer
 		}*/
 	}
 	
+	public FloatBuffer getCurrentBuffer()
+	{
+		return this.currentBuffer;
+	}
+	
 	public static void main(String[] args) throws LWJGLException, IOException
 	{
 		String route=null;//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/spadres/gen_ht_dump.dump";/*"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/gpures_new/gandalfUpGpuResult.dump";*///"D:/glab/TransientVoxelization/paper/results/bunny/gen_dump.dump";//"result_004.png.dump";//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/paper/results/gpures/gandalfUpGpuResult.dump";//"res/result_316.png.dump";//"C:/Users/Ivelate/Documents/GLab/TransientVoxelization/MIT_data/fastcamreference/fastcam_lastest/reconstruction/result_020.png.dump";
@@ -498,7 +515,9 @@ public class TransientVisualizer
 				ex.printStackTrace();
 			}
 		}
-		new TransientVisualizer(route);
+		TransientVisualizerParams params=new TransientVisualizerParams();
+		params.route=route;
+		new TransientVisualizer(params);
 		
 		System.out.println("Fin!");
 	}

@@ -47,6 +47,9 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
+import com.github.ivelate.JavaHDR.HDREncoder;
+import com.github.ivelate.JavaHDR.RGBE;
+
 import file.AcceptedFileName;
 import file.AcceptedFileName.StreakLaser;
 import file.HDRDecoder;
@@ -130,6 +133,7 @@ public class TransientVoxelization
 			//Saves all requested files
 			File file=params.filename2d;
 			File folder=params.saveFolder;
+			String extension=(params.DEFAULT_SAVE_AS_HDR?".hdr":".png");
 			int cont=0;
 			if(file==null)
 			{
@@ -137,7 +141,7 @@ public class TransientVoxelization
 				{
 					String name="result_";
 					for(int i=Integer.toString(cont).length();i<3;i++) name=name+"0";
-					name=name+cont+".png";
+					name=name+cont+extension;
 					file=new File(folder,name);
 					cont++;
 				}while(file.exists());
@@ -256,7 +260,7 @@ public class TransientVoxelization
 	{
 		saveFinalTextureToFileCPUApplyDefaultFilters(file,VOXEL_RESOLUTION,image,params.printGrayscale,get3DTextureData());
 	}
-	public static void saveFinalTextureToFileCPUApplyDefaultFilters(File file,int VOXEL_RESOLUTION,boolean image,boolean grayscale,int[] data) throws IOException
+	public static float[][][] getFilteredVolumeFromData(int VOXEL_RESOLUTION,int[] data)
 	{
 		ArrayVoxelContainer container=new ArrayVoxelContainer(VOXEL_RESOLUTION,data);
 
@@ -292,6 +296,12 @@ public class TransientVoxelization
 				}
 			}
 		}
+		
+		return filtered;
+	}
+	public static void saveFinalTextureToFileCPUApplyDefaultFilters(File file,int VOXEL_RESOLUTION,boolean image,boolean grayscale,int[] data) throws IOException
+	{
+		float[][][] filtered=getFilteredVolumeFromData(VOXEL_RESOLUTION,data);
 		
 		if(!image) save3DBackprojectionToFile(filtered,file);
 		else save2DBackprojectionToFile(filtered,file,grayscale);
@@ -415,6 +425,12 @@ public class TransientVoxelization
 	}
 	private static void saveFinalTextureToFile(long[] img,short[] depths,int res,File file,boolean grayscale) throws IOException
 	{
+		String fileLower=file.getName().toLowerCase();
+		if(fileLower.endsWith(".hdr")) saveFinalTextureToFileHDR(img,depths,res,file,grayscale);
+		else saveFinalTextureToFilePng(img,depths,res,file,grayscale);
+	}
+	private static void saveFinalTextureToFilePng(long[] img,short[] depths,int res,File file,boolean grayscale) throws IOException
+	{
 		long maxvalue=0;
 		for(int i=0;i<img.length;i++) if(maxvalue<img[i]) maxvalue=img[i];
 		System.out.println("Max value= "+maxvalue); //|TODO debug
@@ -439,7 +455,18 @@ public class TransientVoxelization
 		ImageIO.write(off_Image, "PNG", file);
 		ImageIO.write(depth_Image, "PNG", new File(file.getParentFile(),file.getName().replaceFirst("[.][^.]+$", "")+"_depth.png"));
 	}
-	
+	private static void saveFinalTextureToFileHDR(long[] img,short[] depths,int res,File file,boolean grayscale) throws IOException
+	{
+		double maxValue=0;
+		for(int i=0;i<img.length;i++) if(maxValue<img[i]) maxValue=img[i];
+		
+		//Get RGBE from data[] values and parse it into bdata. Only RE components are needed as R=G=B
+		byte[] bdata=new byte[img.length*2];
+		//Fill bdata
+		for(int s=0;s<img.length;s+=res) for(int i=0;i<res;i++) RGBE.float2re(bdata, (float)(img[i+s]/maxValue), i +s*2, res); //Contiguous in the scanline
+		
+		HDREncoder.writeHDR(bdata,res,res,false,file);
+	}
 	/**
 	 * Returns a RGB value for a intensity value ranging from 0 to 255. If <grayscale> is not enabled, the rgb scale will be the Matlab Jet Scale
 	 */
@@ -639,7 +666,7 @@ public class TransientVoxelization
 				imgs=new TransientImage[files.length];
 				if(MEMORY_SAVING_MODE){
 					for(int i=0;i<files.length;i++){
-						TransientImage img=HDRDecoder.decodeFloatFile(files[i], t_delta,intensityUnit,params.OVERRIDE_TRANSIENT_WALL_POINTS,transientStorage);
+						TransientImage img=HDRDecoder.decodeFile(files[i], t_delta,intensityUnit,params.OVERRIDE_TRANSIENT_WALL_POINTS,transientStorage);
 						float maxValue=img.getMaxValue();
 						if(maxIntensity<maxValue) maxIntensity=maxValue;
 						//Heuristic: All transient images are usually of the same size
@@ -800,7 +827,7 @@ public class TransientVoxelization
 		StreakLaser sl=afn.getStreakAndLaser(file);
 
 		//It doesn't even applies intensity correction over the streak so whatever, disabled |TODO hi :D
-		toRet = data==null?HDRDecoder.decodeFloatFile(file,timeScale,intensityUnit,customWallValues/*,sl.streak*/):HDRDecoder.decodeFloatFile(file,timeScale,intensityUnit,customWallValues,/*sl.streak,*/data);
+		toRet = data==null?HDRDecoder.decodeFile(file,timeScale,intensityUnit,customWallValues/*,sl.streak*/):HDRDecoder.decodeFile(file,timeScale,intensityUnit,customWallValues,/*sl.streak,*/data);
 
 		toRet.setParamsForCamera(cam,lookTo,wallDir, wallNormal,fov,lasers[sl.laser],sl.streak,streakyratio,t0);
 		float laserDist=(float)(Math.sqrt((Vector3f.sub(toRet.getLaser(), laserOrigin, null)).lengthSquared()));
@@ -1101,6 +1128,10 @@ public class TransientVoxelization
 					break;
 				case "-printTransientImages":
 					params.PRINT_TRANSIENT_IMAGES=true;
+					break;
+				//DEBUG, it will be selected automatically
+				case "-loadFromFloat":
+					params.acceptedFileName=new AcceptedFileName(2,2,".float");
 					break;
 				default:
 					System.err.println("Unknown arg "+expr);
