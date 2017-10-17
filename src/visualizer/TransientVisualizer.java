@@ -77,6 +77,7 @@ public class TransientVisualizer
 	{
 		IvEngine.configDisplay(RES, RES, "Transient Visualizer", false, false, false);
 		
+		this.currentThreshold=params.initialThreshold;
 		this.screenRotationState=params.initialScreenRotationState;
 		initResources(params);
 		

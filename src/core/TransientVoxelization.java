@@ -40,6 +40,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL42;
+import org.lwjgl.opengl.GL44;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.Util;
 import org.lwjgl.util.vector.Matrix4f;
@@ -574,6 +575,17 @@ public class TransientVoxelization
 		
 		//Using the maximum precision offered by the current drivers (GL_R32UI), but a 64bit one would be handy if it existed
 		glTexImage3D(GL_TEXTURE_3D,0,GL30.GL_R32UI,VOXEL_RESOLUTION,VOXEL_RESOLUTION,VOXEL_RESOLUTION,0, GL30.GL_RED_INTEGER,GL11.GL_UNSIGNED_INT,(IntBuffer)null);
+		
+		if(params.CLEAR_STORAGE_ON_INIT)
+		{
+			//It is initialized to 0, right? Well, maybe not in all GPUs
+			//This buffer is used to fill the 3D storage with 0s again
+			IntBuffer zeroBuffer=BufferUtils.createIntBuffer(1);
+			zeroBuffer.put(0);
+			zeroBuffer.flip();
+			GL44.glClearTexImage(voxelStorageTexture, 0, GL30.GL_RED_INTEGER,GL11.GL_UNSIGNED_INT, zeroBuffer);
+		}
+
 
 		//FINAL FRAMEBUFFER
 		this.finalResultFramebuffer=GL30.glGenFramebuffers();
@@ -778,7 +790,7 @@ public class TransientVoxelization
 	/**
 	 * Parsers a provided lasers file into a Vector3f[] table. The lasers are read in little endian in pure binary format.
 	 */
-	public static Vector3f[] parseLasersFile(File lasersFile) 
+	public static Vector3f[] parsePositionsFile(File lasersFile) 
 	{
 		try {
 			LittleEndianDataInputStream dis=new LittleEndianDataInputStream(new BufferedInputStream(new FileInputStream(lasersFile)));
@@ -798,7 +810,7 @@ public class TransientVoxelization
 	/**
 	 * Parsers a provided lasers file into a Vector3f[] table. The lasers are read in text format
 	 */
-	public static Vector3f[] parseLasersFileText(File lasersFile) 
+	public static Vector3f[] parsePositionsFileText(File lasersFile) 
 	{
 		try {
 			System.out.println(lasersFile.getAbsolutePath());
@@ -1046,6 +1058,14 @@ public class TransientVoxelization
 					params.lasersFile=new File(args[++i]);
 					params.readLasersAsText=true;
 					break;
+				case "-wallFile":
+					params.wallFile=new File(args[++i]);
+					params.readWallAsText=false;
+					break;
+				case "-wallFileText":
+					params.wallFile=new File(args[++i]);
+					params.readWallAsText=true;
+					break;
 				case "-saveFolder":
 					params.saveFolder=new File(args[++i]);
 					break;
@@ -1155,13 +1175,25 @@ public class TransientVoxelization
 		{
 			boolean error=false;
 			if(params.lasersFile.exists()) {
-				Vector3f[] ret=params.readLasersAsText?parseLasersFileText(params.lasersFile):parseLasersFile(params.lasersFile);
+				Vector3f[] ret=params.readLasersAsText?parsePositionsFileText(params.lasersFile):parsePositionsFile(params.lasersFile);
 				System.out.println("LASERS!! "+ret.length);
 				if(ret!=null) params.lasers=ret;
 				else error=true;
 			}
 			else error=true;
 			if(error) System.err.println("Error parsing lasers file, using default lasers instead");
+		}
+		if(params.wallFile!=null)
+		{
+			boolean error=false;
+			if(params.wallFile.exists()) {
+				Vector3f[] ret=params.readWallAsText?parsePositionsFileText(params.wallFile):parsePositionsFile(params.wallFile);
+				System.out.println("Wall points: " + ret.length);
+				if(ret!=null) params.OVERRIDE_TRANSIENT_WALL_POINTS=ret;
+				else error=true;
+			}
+			else error=true;
+			if(error) System.err.println("Error parsing wall file, using default wall instead");
 		}
 		
 		return true;

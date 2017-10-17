@@ -83,6 +83,8 @@ public class TransientVoxelizationParams
 																										//each float file contains an streak image
 	public File lasersFile=null; //If null, lasers are received by command line input
 	public boolean readLasersAsText=false; //if false, read the file in a binary format <float><float><float>... , if true, read the file in text format %d %d %d\n%d %d %d ...
+	public File wallFile=null;
+	public boolean readWallAsText=false;
 	
 	//OUTPUT
 	public boolean DEFAULT_SAVE_AS_HDR=false; //If no image name is specified, details if the default output is HDR or not
@@ -102,6 +104,7 @@ public class TransientVoxelizationParams
 	public boolean AUTO_CLEAN=true; //Auto calls cleanup() after code execution. Disable only if some data of the GPU needs to be accessed after the voxelization is performed. The cleanup will need to be performed manually later.
 	public boolean FORCE_2D_BACKPROJECT=false; //Performs 2D backprojection even if no 2D image is being saved (virtually useless if not paired with AUTO_CLEAN=false)
 	public boolean ENABLE_HARDWARE_CONSERVATIVE_RASTER=false; //Causes triangle vertex overloading if active, so results are usually beter if left disabled
+	public boolean CLEAR_STORAGE_ON_INIT=true; //Clears to 0 the 3D storage when initializing it. In some GPUs it is already initialized to 0, so it could be disabled for a slight speed improvement
 	
 	public TransientImage[] CUSTOM_TRANSIENT_IMAGES=null; //Transient images to use instead of the ones on the input folder
 	public boolean AUTO_MANAGE_DISPLAY=false;
@@ -129,4 +132,5 @@ public class TransientVoxelizationParams
 		
 		if(ELLIPSOIDS_PER_PIXEL<1) ELLIPSOIDS_PER_PIXEL=1;
 	}
+	
 }

@@ -6,4 +6,5 @@ public class TransientVisualizerParams
 	public float[][][] overrideData=null;
 	public boolean conserveBuffers=false;
 	public int initialScreenRotationState=0;
+	public float initialThreshold=0.5f;
 }

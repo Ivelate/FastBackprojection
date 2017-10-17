@@ -43,6 +43,40 @@ public class HDRDecoder
 		System.exit(0);
 		return null;
 	}*/
+	/**
+	 * Gets a transient image from a data array float[][][]
+	 */
+	public static TransientImage loadTransientImageFromMemory(float timeScale,float intensityUnit,Vector3f[] customWallPoints,float[][][] data)
+	{
+		int width=data.length;
+		int height=data[0].length;
+		int channels=data[0][0].length;
+		float max=0;
+		float min=Float.MAX_VALUE;
+		//Find max and min
+		for(int h=0;h<height;h++)
+		{
+			for(int w=0;w<width;w++)
+			{
+				for(int c=0;c<channels;c++)
+				{
+					if(max<data[w][h][c]) max=data[w][h][c];
+					if(data[w][h][c]!=0&&data[w][h][c]<min) min=data[w][h][c];
+				}
+			}
+		}
+		
+		return loadTransientImageFromMemory(timeScale,intensityUnit,customWallPoints,data);
+	}
+	public static TransientImage loadTransientImageFromMemory(float timeScale,float intensityUnit,Vector3f[] customWallPoints,float[][][] data,float max,float min)
+	{
+		int width=data.length;
+		int height=data[0].length;
+		int channels=data[0][0].length;
+		
+		return customWallPoints==null?new TransientImage(width,height,channels,timeScale,intensityUnit,data,max,min):
+			new CustomValuesTransientImage(width,height,channels,timeScale,intensityUnit,data,max,min,customWallPoints);
+	}
 	public static TransientImage decodeFile(File file,float timeScale,float intensityUnit,Vector3f[] customWallPoints) throws IOException
 	{
 		return decodeFile(file,timeScale,intensityUnit,customWallPoints,null);
