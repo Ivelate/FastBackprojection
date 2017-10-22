@@ -118,7 +118,7 @@ public class MatlabFacade
 			}
 			timgs[i]=new CustomValuesTransientImage(width,height,channels,(float)tpp,1,data,max,min,customWallPoints);
 			//NEED THE WALL DIR AND NORMAL!
-			timgs[i].setParamsForCamera(camOrigin, null, wallDir, wallNormal, 0, lasers[i], 0, 1,(float)timeshift);
+			timgs[i].setParamsForCamera(camOrigin, null, wallDir, wallNormal, 0, lasers[i], 0, 1,(float)timeshift,false);
 			timgs[i].setLaserHitTime(Vector3f.sub(lasers[i], laserOrigin, null).length());
 			//timgs[i].printToFile(new File("zz_transient_"+lasers[i].x+"_"+lasers[i].y+"_"+lasers[i].z+".png"));
 		}

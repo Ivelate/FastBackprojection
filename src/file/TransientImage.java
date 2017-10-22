@@ -14,6 +14,10 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.util.vector.Vector3f;
 
+import com.github.ivelate.JavaHDR.HDREncoder;
+import com.github.ivelate.JavaHDR.HDRImage;
+import com.github.ivelate.JavaHDR.HDRImageGrayscale;
+
 /**
  * Transient Image. Contains the intensity values of a transient image, its laser associated, the wall points to which each pixel is projected, the time dilations, etc.
  * Provides methods to perform most typical calculations needed in transient images in an automatic way.
@@ -81,15 +85,15 @@ public class TransientImage
 		return this.timePerCoord;
 	}
 	
-	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio)
+	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio,boolean unwarpCamera)
 	{
-		this.setParamsForCamera(cam, lookTo,wallDir,wallNormal, fov, laser, ystreak,streakyratio,0);
+		this.setParamsForCamera(cam, lookTo,wallDir,wallNormal, fov, laser, ystreak,streakyratio,0,unwarpCamera);
 	}
 	
 	/**
 	 *	Configs all scene parameters, calculating points of the wall captured by the camera and the time dilations 
 	 */
-	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio,float t0)
+	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio,float t0,boolean unwarpCamera)
 	{
 		float dwall=(float)Math.sqrt((Vector3f.sub(cam, lookTo, null)).lengthSquared());
 		
@@ -111,10 +115,13 @@ public class TransientImage
 		
 		float dwallstreaksq=dwall*dwall + streakAbsY*streakAbsY;
 		
-		for(int i=0;i<this.wallCameraDilation.length;i++)
+		if(!unwarpCamera)
 		{
-			float x=(((float)(i)/this.wallCameraDilation.length)*this.wallViewWidth)-semiWidth + pxHalfWidth;
-			this.wallCameraDilation[i]=(float)Math.sqrt(x*x + dwallstreaksq) - t0; 
+			for(int i=0;i<this.wallCameraDilation.length;i++)
+			{
+				float x=(((float)(i)/this.wallCameraDilation.length)*this.wallViewWidth)-semiWidth + pxHalfWidth;
+				this.wallCameraDilation[i]=(float)Math.sqrt(x*x + dwallstreaksq) - t0; 
+			}
 		}
 		this.laser=laser;
 	}
@@ -163,6 +170,14 @@ public class TransientImage
 	}
 	
 	/**
+	 * To be used with caution. Treat the data returned by this method as a constant
+	 */
+	public float[][][] getInternalStorage()
+	{
+		return this.data;
+	}
+	
+	/**
 	 * Used as debug
 	 * @throws IOException 
 	 */
@@ -172,18 +187,30 @@ public class TransientImage
 	}
 	public void printToFile(File outFile,float maxValue) throws IOException
 	{
-		BufferedImage off_Image =
-				  new BufferedImage(width, height,
-				                    BufferedImage.TYPE_INT_RGB);
-		
-		for(int x=0;x<width;x++) for(int y=0;y<height;y++) {
-
-			int c=data[x][y][0]<maxValue?(int)((data[x][y][0]*255) / maxValue):0; //If intensity exceeds maximum intensity, image has been clamped
-			//|TODO unshit
-			off_Image.setRGB(x, y, c<<16 | c<< 8 | c);
+		if(outFile.getName().toLowerCase().endsWith(".hdr"))
+		{
+			HDRImage img=new HDRImageGrayscale(width,height);
+			for(int x=0;x<width;x++) for(int y=0;y<height;y++) {		
+				float c=data[x][y][0]<maxValue?data[x][y][0]:0; //If intensity exceeds maximum intensity, image has been clamped
+				img.setPixelValue(x, y, 0, c);
+			}
+			HDREncoder.writeHDR(img, outFile);
 		}
+		else
+		{
+			BufferedImage off_Image =
+					  new BufferedImage(width, height,
+					                    BufferedImage.TYPE_INT_RGB);
+			
+			for(int x=0;x<width;x++) for(int y=0;y<height;y++) {
 	
-		ImageIO.write(off_Image, "PNG", outFile);
+				int c=data[x][y][0]<maxValue?(int)((data[x][y][0]*255) / maxValue):0; //If intensity exceeds maximum intensity, image has been clamped
+				//|TODO unshit
+				off_Image.setRGB(x, y, c<<16 | c<< 8 | c);
+			}
+		
+			ImageIO.write(off_Image, "PNG", outFile);
+		}
 	}
 	/*public int getAsTexture(int textureUnit)
 	{

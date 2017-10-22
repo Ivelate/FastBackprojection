@@ -55,7 +55,7 @@ public class Backprojection
 			do
 			{
 				TransientImage[] transientImages=params.CUSTOM_TRANSIENT_IMAGES==null?
-						initTransientImages(params.inputFolder,params.acceptedFileName,params.lasers,params.fov,params.streakYratio,params.t_delta,params.t0,params.camera,params.lookTo,params.laserOrigin,params.OVERRIDE_TRANSIENT_WALL_POINTS,imageCount,transientImageChunkSize) :
+						initTransientImages(params.inputFolder,params.acceptedFileName,params.lasers,params.fov,params.streakYratio,params.t_delta,params.t0,params.camera,params.lookTo,params.laserOrigin,params.UNWARP_CAMERA,params.UNWARP_LASER,params.OVERRIDE_TRANSIENT_WALL_POINTS,imageCount,transientImageChunkSize) :
 							params.CUSTOM_TRANSIENT_IMAGES;
 				if(params.CUSTOM_TRANSIENT_IMAGES!=null) transientImageChunkSize=transientImages.length; //All transient images are loaded
 				
@@ -194,15 +194,15 @@ public class Backprojection
 		return new FilterResults(maxResult,maxResultDepth,1);
 	}
 	
-	private TransientImage[] initTransientImages(String route,AcceptedFileName afn,Vector3f[] lasers,float fov,float streakyratio,float timeScale,float t0,Vector3f camera,Vector3f lookTo,Vector3f laserOrigin,Vector3f[] customWallPoints) throws IOException 
+	private TransientImage[] initTransientImages(String route,AcceptedFileName afn,Vector3f[] lasers,float fov,float streakyratio,float timeScale,float t0,Vector3f camera,Vector3f lookTo,Vector3f laserOrigin,boolean unwarpCamera,boolean unwarpLaser,Vector3f[] customWallPoints) throws IOException 
 	{
-		return this.initTransientImages(new File(route), afn, lasers, fov, streakyratio, timeScale, t0, camera, lookTo, laserOrigin,customWallPoints);
+		return this.initTransientImages(new File(route), afn, lasers, fov, streakyratio, timeScale, t0, camera, lookTo, laserOrigin,unwarpCamera,unwarpLaser,customWallPoints);
 	}
-	private TransientImage[] initTransientImages(File folder,AcceptedFileName afn,Vector3f[] lasers,float fov,float streakyratio,float timeScale,float t0,Vector3f camera,Vector3f lookTo,Vector3f laserOrigin,Vector3f[] customWallPoints) throws IOException 
+	private TransientImage[] initTransientImages(File folder,AcceptedFileName afn,Vector3f[] lasers,float fov,float streakyratio,float timeScale,float t0,Vector3f camera,Vector3f lookTo,Vector3f laserOrigin,boolean unwarpCamera,boolean unwarpLaser,Vector3f[] customWallPoints) throws IOException 
 	{
-		return initTransientImages(folder,afn,lasers,fov,streakyratio,timeScale,t0,camera,lookTo,laserOrigin,customWallPoints,0,Integer.MAX_VALUE);
+		return initTransientImages(folder,afn,lasers,fov,streakyratio,timeScale,t0,camera,lookTo,laserOrigin,unwarpCamera,unwarpLaser,customWallPoints,0,Integer.MAX_VALUE);
 	}
-	private TransientImage[] initTransientImages(File folder,AcceptedFileName afn,Vector3f[] lasers,float fov,float streakyratio,float timeScale,float t0,Vector3f camera,Vector3f lookTo,Vector3f laserOrigin,Vector3f[] customWallPoints,int from,int toSize) throws IOException 
+	private TransientImage[] initTransientImages(File folder,AcceptedFileName afn,Vector3f[] lasers,float fov,float streakyratio,float timeScale,float t0,Vector3f camera,Vector3f lookTo,Vector3f laserOrigin,boolean unwarpCamera,boolean unwarpLaser,Vector3f[] customWallPoints,int from,int toSize) throws IOException 
 	{
 		System.out.println("Loading Streak Images from disk");
 		//Assumng constant normal, dir |TODO
@@ -226,7 +226,7 @@ public class Backprojection
 		int cont=0;
 		for(File f:files)
 		{
-			transientImages[cont]=TransientVoxelization.initTransientImage(f, timeScale,t0,-1, lasers,fov,streakyratio,camera,lookTo,wallDir,wallNormal,laserOrigin,afn,customWallPoints);
+			transientImages[cont]=TransientVoxelization.initTransientImage(f, timeScale,t0,-1, lasers,fov,streakyratio,camera,lookTo,wallDir,wallNormal,laserOrigin,unwarpCamera,unwarpLaser,afn,customWallPoints);
 			cont++;
 			System.out.println(cont+"/"+transientImages.length+" loaded");
 		}

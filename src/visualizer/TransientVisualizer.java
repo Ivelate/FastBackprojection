@@ -507,6 +507,18 @@ public class TransientVisualizer
 			}
 			else System.exit(0);
 		}
+		
+		int initialRotation=0;
+		for(int i=1;i<args.length;i++)
+		{
+			switch(args[i])
+			{
+			case "-inverted":
+				initialRotation=2;
+				break;
+			}
+		}
+		
 		try{
 			TransientVoxelization.loadNatives();
 		}
@@ -518,6 +530,7 @@ public class TransientVisualizer
 		}
 		TransientVisualizerParams params=new TransientVisualizerParams();
 		params.route=route;
+		params.initialScreenRotationState=initialRotation;
 		new TransientVisualizer(params);
 		
 		System.out.println("Fin!");

@@ -33,12 +33,12 @@ public class CustomValuesTransientImage extends TransientImage
 	 * wallDir, lookTo, fov and ystreak are unneeded
 	 */
 	@Override
-	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio)
+	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio,boolean unwarpCamera)
 	{
-		this.setParamsForCamera(cam, lookTo, wallDir, wallNormal, fov, laser, ystreak,streakyratio,0);
+		this.setParamsForCamera(cam, lookTo, wallDir, wallNormal, fov, laser, ystreak,streakyratio,0,unwarpCamera);
 	}
 	@Override
-	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio,float t0)
+	public void setParamsForCamera(Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,float fov,Vector3f laser,int ystreak,float streakyratio,float t0,boolean unwarpCamera)
 	{
 		pointWallI=customWallPoints[0];
 		this.wallDirection=wallDir;
@@ -46,9 +46,12 @@ public class CustomValuesTransientImage extends TransientImage
 		this.wallViewWidth=Vector3f.sub(customWallPoints[0], customWallPoints[customWallPoints.length-1], null).length();
 		this.pxHalfWidth=wallViewWidth / (this.height*2);
 		
-		for(int i=0;i<this.wallCameraDilation.length;i++)
+		if(!unwarpCamera)
 		{
-			this.wallCameraDilation[i]=Vector3f.sub(cam, customWallPoints[i], null).length() - t0;
+			for(int i=0;i<this.wallCameraDilation.length;i++)
+			{
+				this.wallCameraDilation[i]=Vector3f.sub(cam, customWallPoints[i], null).length() - t0;
+			}
 		}
 		this.laser=laser;
 	}

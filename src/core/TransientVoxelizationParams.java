@@ -47,6 +47,8 @@ public class TransientVoxelizationParams
 	public Vector3f wallDir=new Vector3f(1,0,0); //Normalized (x spatial axis of the streak images)
 	public float t_delta=0.001f; //cam exposure
 	public float t0=0;
+	public boolean UNWARP_LASER=false; //True if no streak distance laser->wall is to be considered
+	public boolean UNWARP_CAMERA=false; //True if no streak distance wall->camera is to be considered
 	
 	public Vector3f[] lasers={
 			new Vector3f(-0.2f,0,0),

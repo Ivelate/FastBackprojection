@@ -18,6 +18,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -689,7 +690,7 @@ public class TransientVoxelization
 				}
 				else{
 					for(int i=0;i<files.length;i++){
-						imgs[i]=TransientVoxelization.initTransientImage(files[i], t_delta,t0,intensityUnit, lasers,fov,streakyratio,camera,lookTo,wallDir,wallNormal,laserOrigin,afn,params.OVERRIDE_TRANSIENT_WALL_POINTS);
+						imgs[i]=TransientVoxelization.initTransientImage(files[i], t_delta,t0,intensityUnit, lasers,fov,streakyratio,camera,lookTo,wallDir,wallNormal,laserOrigin,params.UNWARP_CAMERA,params.UNWARP_LASER,afn,params.OVERRIDE_TRANSIENT_WALL_POINTS);
 						if(maxIntensity<imgs[i].getMaxValue()) maxIntensity=imgs[i].getMaxValue();
 					}
 				}
@@ -718,12 +719,12 @@ public class TransientVoxelization
 			{
 				if(imgs[i]==null) {
 					long loadI=System.currentTimeMillis();
-					imgs[i]=TransientVoxelization.initTransientImage(files[i], t_delta,t0,intensityUnit, lasers,fov,streakyratio,camera,lookTo,wallDir,wallNormal,laserOrigin,afn,params.OVERRIDE_TRANSIENT_WALL_POINTS,transientStorage);
+					imgs[i]=TransientVoxelization.initTransientImage(files[i], t_delta,t0,intensityUnit, lasers,fov,streakyratio,camera,lookTo,wallDir,wallNormal,laserOrigin,params.UNWARP_CAMERA,params.UNWARP_LASER,afn,params.OVERRIDE_TRANSIENT_WALL_POINTS,transientStorage);
 					ti_ellipsoidcreation+=System.currentTimeMillis()-loadI; //Correcting time (loading is not taken in account)
 				}
 				if(params.PRINT_TRANSIENT_IMAGES){
 					long printI=System.currentTimeMillis();
-					imgs[i].printToFile(new File("StreakImage_"+i+".png"),maxIntensity);
+					imgs[i].printToFile(new File("StreakImage_"+i+".hdr"),maxIntensity);
 					ti_ellipsoidcreation+=System.currentTimeMillis()-printI; //Correcting time (printing is not taken in account)
 				}
 				int ellipsoidsPerPixel=params.ELLIPSOID_PER_PIXEL_THRESHOLD_WEIGHT<=0?params.ELLIPSOIDS_PER_PIXEL:(int)Math.round(params.ELLIPSOID_PER_PIXEL_THRESHOLD_WEIGHT*imgs[i].getDeltaTime()/this.voxelSize);
@@ -784,6 +785,7 @@ public class TransientVoxelization
 		} catch (IOException e) {
 			System.err.println("Error reading file \"img/cube.float\"");
 		}
+		
 		return time;
 	}
 	
@@ -829,11 +831,11 @@ public class TransientVoxelization
 		return null;
 	}
 	
-	public static TransientImage initTransientImage(File file,float timeScale,float t0,float intensityUnit,Vector3f[] lasers,float fov,float streakyratio,Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,Vector3f laserOrigin,AcceptedFileName afn,Vector3f[] customWallValues) throws IOException
+	public static TransientImage initTransientImage(File file,float timeScale,float t0,float intensityUnit,Vector3f[] lasers,float fov,float streakyratio,Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,Vector3f laserOrigin,boolean unwarpCamera,boolean unwarpLaser,AcceptedFileName afn,Vector3f[] customWallValues) throws IOException
 	{
-		return initTransientImage(file, timeScale,t0,intensityUnit,lasers,fov,streakyratio,cam,lookTo,wallDir,wallNormal,laserOrigin,afn,customWallValues,null);
+		return initTransientImage(file, timeScale,t0,intensityUnit,lasers,fov,streakyratio,cam,lookTo,wallDir,wallNormal,laserOrigin,unwarpCamera,unwarpLaser,afn,customWallValues,null);
 	}
-	public static TransientImage initTransientImage(File file,float timeScale,float t0,float intensityUnit,Vector3f[] lasers,float fov,float streakyratio,Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,Vector3f laserOrigin,AcceptedFileName afn,Vector3f[] customWallValues,float[][][] data) throws IOException
+	public static TransientImage initTransientImage(File file,float timeScale,float t0,float intensityUnit,Vector3f[] lasers,float fov,float streakyratio,Vector3f cam,Vector3f lookTo,Vector3f wallDir,Vector3f wallNormal,Vector3f laserOrigin,boolean unwarpCamera,boolean unwarpLaser,AcceptedFileName afn,Vector3f[] customWallValues,float[][][] data) throws IOException
 	{
 		TransientImage toRet;
 		StreakLaser sl=afn.getStreakAndLaser(file);
@@ -841,9 +843,9 @@ public class TransientVoxelization
 		//It doesn't even applies intensity correction over the streak so whatever, disabled |TODO hi :D
 		toRet = data==null?HDRDecoder.decodeFile(file,timeScale,intensityUnit,customWallValues/*,sl.streak*/):HDRDecoder.decodeFile(file,timeScale,intensityUnit,customWallValues,/*sl.streak,*/data);
 
-		toRet.setParamsForCamera(cam,lookTo,wallDir, wallNormal,fov,lasers[sl.laser],sl.streak,streakyratio,t0);
+		toRet.setParamsForCamera(cam,lookTo,wallDir, wallNormal,fov,lasers[sl.laser],sl.streak,streakyratio,t0,unwarpCamera);
 		float laserDist=(float)(Math.sqrt((Vector3f.sub(toRet.getLaser(), laserOrigin, null)).lengthSquared()));
-		toRet.setLaserHitTime(laserDist);
+		toRet.setLaserHitTime(unwarpLaser?0:laserDist);
 		return toRet;
 	}
 	
@@ -1153,6 +1155,12 @@ public class TransientVoxelization
 				case "-loadFromFloat":
 					params.acceptedFileName=new AcceptedFileName(2,2,".float");
 					break;
+				case "-unwarpLaser":
+					params.UNWARP_LASER=true;
+					break;
+				case "-unwarpCamera":
+					params.UNWARP_CAMERA=true;
+					break;
 				default:
 					System.err.println("Unknown arg "+expr);
 				}
@@ -1278,7 +1286,16 @@ public class TransientVoxelization
 	public static final void loadNatives() throws IOException
 	{
 		System.out.println("NATIVE LOAD");
-		File nativesFolder=new File(NATIVE_FOLDER_NAME);
+		File nativesFolder=null;
+		try
+		{
+			File jarFile=new File(TransientVoxelization.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+			nativesFolder=new File(jarFile.getParentFile().getPath(),NATIVE_FOLDER_NAME);
+		}
+		catch(SecurityException | URISyntaxException ex){
+			System.out.println("Problem loading natives from path relative to .jar. Loading them from absolute path (execution path)");
+			nativesFolder=new File(NATIVE_FOLDER_NAME);
+		}
 		if(!nativesFolder.exists()||!nativesFolder.isDirectory()||!nativesFolder.canRead()) throw new IOException("Can't read native libraries folder");
 		System.setProperty("org.lwjgl.librarypath", nativesFolder.getAbsolutePath());
 	}

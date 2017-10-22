@@ -66,7 +66,7 @@ public class HDRDecoder
 			}
 		}
 		
-		return loadTransientImageFromMemory(timeScale,intensityUnit,customWallPoints,data);
+		return loadTransientImageFromMemory(timeScale,intensityUnit,customWallPoints,data,max,min);
 	}
 	public static TransientImage loadTransientImageFromMemory(float timeScale,float intensityUnit,Vector3f[] customWallPoints,float[][][] data,float max,float min)
 	{
