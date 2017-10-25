@@ -27,7 +27,8 @@ public class TransientVoxelizationParams
 	public boolean USE_HALF_ELLIPSOIDS=true; //Considering that only half of an ellipsoid can be seen at the same time (because the wall occludes the rest) this can be used to save computations. If some of the scene wall points doesn't share the same normal THIS NO LONGER APPLIES!! so it should be set at false at expense of computation power
 											 //(and next time record just a wall pls)
 	public float CLAMP_INTENSITY_GREATER_THAN=-1; //Max streak intensity threshold to consider, all values above this are discarded (none are discarded if this value is <0)
-	
+	public boolean NORMALIZE_TO_UNIT_INTERVAL=false; //If false, the program output probabilities in the 0..1 interval regardless of the radiance of the input streaks
+
 	//UNIMPLEMENTED public float CLAMP_TIME_COORD_LESS_THAN=-1; //Min time coord to consider, all values above this are discarded (none are discarded if this value is <0)
 	
 	//Ortho matrix size
