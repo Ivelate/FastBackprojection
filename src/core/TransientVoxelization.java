@@ -1118,15 +1118,19 @@ public class TransientVoxelization
 					break;
 				case "-filename":
 				case "-filename2d":
+					params.saveImage=true;
 					params.filename2d=new File(args[++i]);
 					break;
 				case "-filename2dRaw":
+					params.save2DRaw=true;
 					params.filename2draw=new File(args[++i]);
 					break;
 				case "-filename3d":
+					params.save3DDump=true;
 					params.filename3d=new File(args[++i]);
 					break;
 				case "-filename3dRaw":
+					params.save3DRaw=true;
 					params.filename3draw=new File(args[++i]);
 					break;
 				case "-wallNormal":
