@@ -102,6 +102,8 @@ public class TransientVoxelization
 	private int finalResultFramebuffer;
 	
 	private Matrix4f orthoMatrix;
+
+	public float maxIntensity; // Max intensity value of the streak images
 	
 	public TransientVoxelization(TransientVoxelizationParams params) throws LWJGLException
 	{		
@@ -291,89 +293,113 @@ public class TransientVoxelization
 	{
 		saveFinalTextureToFileCPUApplyDefaultFilters(file,VOXEL_RESOLUTION,image,params.printGrayscale,getCurrent3DData());
 	}
-	public static float[][][] getFilteredVolumeFromData(int VOXEL_RESOLUTION,int[] data)
-	{
-		ArrayVoxelContainer container=new ArrayVoxelContainer(VOXEL_RESOLUTION,data);
 
-		float maxIntensity=0;
-		float[][][] filtered=new float[VOXEL_RESOLUTION][VOXEL_RESOLUTION][VOXEL_RESOLUTION];
-		//LAPLACIAN FILTER
-		for(int z=1;z<VOXEL_RESOLUTION-1;z++)
-		{
-			for(int y=1;y<VOXEL_RESOLUTION-1;y++)
-			{
-				for(int x=1;x<VOXEL_RESOLUTION-1;x++)
-				{
-					float c=container.get(x, y, z);
-					float neighbours=0;
-					for(int xf=-1;xf<=1;xf++) for(int yf=-1;yf<=1;yf++) for(int zf=-1;zf<=1;zf++) if(xf!=0||yf!=0||zf!=0) neighbours+=container.get(x+xf, y+yf, z+zf);		
+	public float[][][] getFilteredVolumeFromData(int VOXEL_RESOLUTION, int[] data)
+	{
+		ArrayVoxelContainer container = new ArrayVoxelContainer(VOXEL_RESOLUTION, data);
+
+		float maxIntensityInt = 0;
+		float[][][] filtered = new float[VOXEL_RESOLUTION][VOXEL_RESOLUTION][VOXEL_RESOLUTION];
+		
+		/* LAPLACIAN FILTER */
+		for (int z = 1; z < VOXEL_RESOLUTION-1; z++) {
+			for (int y = 1; y < VOXEL_RESOLUTION-1; y++) {
+				for (int x = 1; x < VOXEL_RESOLUTION-1; x++) {
+					float c = container.get(x, y, z);
+					float neighbours = 0;
+					for (int xf = -1; xf <= 1; xf++) {
+						for (int yf = -1; yf <= 1; yf++) {
+							for (int zf = -1; zf <= 1; zf++) {
+								if (xf!=0 || yf!=0 || zf!=0) {
+									neighbours += container.get(x+xf, y+yf, z+zf);
+								}
+							}
+						}
+					}
 					
-					c=26*c - neighbours;
-					if(c>maxIntensity) maxIntensity=c;
-					filtered[x][y][z]=c;
+					c = 26*c - neighbours;
+					
+					maxIntensityInt = Math.max(maxIntensityInt, c);
+					filtered[x][y][z] = c;
 				}
 			}
 		}
-		//Normalize to Final Storage
-		for(int z=0;z<VOXEL_RESOLUTION;z++)
-		{
-			for(int y=0;y<VOXEL_RESOLUTION;y++)
-			{
-				for(int x=0;x<VOXEL_RESOLUTION;x++)
-				{
-					float val=filtered[x][y][z]/(maxIntensity);
-					if(val>1) val=1;
-					filtered[x][y][z]=val;
+		
+		/* Normalize to Final Storage */
+		for (int z = 0; z < VOXEL_RESOLUTION; z++) {
+			for (int y = 0; y < VOXEL_RESOLUTION; y++) {
+				for (int x = 0; x < VOXEL_RESOLUTION; x++) {
+					float val = filtered[x][y][z];
+					
+					if (params.NORMALIZE_TO_UNIT_INTERVAL) {
+						val = Math.min(val / maxIntensityInt, 1f);
+					} else {
+						val = (val/(float)(params.MAX_INTENSITY_MULTIPLIER)) * maxIntensity;
+					}
+					
+					filtered[x][y][z] = val;
 				}
 			}
 		}
 		
 		return filtered;
 	}
-	public static void saveFinalTextureToFileCPUApplyDefaultFilters(File file,int VOXEL_RESOLUTION,boolean image,boolean grayscale,int[] data) throws IOException
+
+	public void saveFinalTextureToFileCPUApplyDefaultFilters(File file, int VOXEL_RESOLUTION, boolean image, boolean grayscale, int[] data) throws IOException
 	{
-		float[][][] filtered=getFilteredVolumeFromData(VOXEL_RESOLUTION,data);
+		float[][][] filtered = getFilteredVolumeFromData(VOXEL_RESOLUTION, data);
 		
-		if(!image) save3DBackprojectionToFile(filtered,file);
-		else save2DBackprojectionToFile(filtered,file,grayscale);
+		if (!image) {
+			save3DBackprojectionToFile(filtered, file);
+		} else {
+			save2DBackprojectionToFile(filtered, file, grayscale);
+		}
 	}
 	
 	/**
 	 * Writes the full 3D backprojected intensity texture into a file, raw format.
 	 */
-	private void saveFinalTextureToFileCPURaw(File file,boolean image) throws IOException
+	private void saveFinalTextureToFileCPURaw(File file, boolean image) throws IOException
 	{
 		ArrayVoxelContainer container=new ArrayVoxelContainer(VOXEL_RESOLUTION,getCurrent3DData());
 
-		float maxIntensity=0;
-		float[][][] filtered=new float[VOXEL_RESOLUTION][VOXEL_RESOLUTION][VOXEL_RESOLUTION];
-		//COPY RAW DATA
-		for(int z=0;z<VOXEL_RESOLUTION;z++)
-		{
-			for(int y=0;y<VOXEL_RESOLUTION;y++)
-			{
-				for(int x=0;x<VOXEL_RESOLUTION;x++)
-				{
-					float c=container.get(x, y, z);
-					if(c>maxIntensity) maxIntensity=c;
-					filtered[x][y][z]=c;
-				}
-			}
-		}
-		//Normalize to Final Storage
-		for(int z=0;z<VOXEL_RESOLUTION;z++)
-		{
-			for(int y=0;y<VOXEL_RESOLUTION;y++)
-			{
-				for(int x=0;x<VOXEL_RESOLUTION;x++)
-				{
-					filtered[x][y][z]=filtered[x][y][z]/maxIntensity;
+		float maxIntensityInt = 0;
+		float[][][] filtered = new float[VOXEL_RESOLUTION][VOXEL_RESOLUTION][VOXEL_RESOLUTION];
+		
+		/* COPY RAW DATA */
+		for (int z = 0; z < VOXEL_RESOLUTION; z++) {
+			for (int y = 0; y < VOXEL_RESOLUTION; y++) {
+				for (int x = 0; x < VOXEL_RESOLUTION; x++) {
+					float c = container.get(x, y, z);
+					
+					maxIntensityInt = Math.max(maxIntensityInt, c);
+					filtered[x][y][z] = c;
 				}
 			}
 		}
 		
-		if(!image) save3DBackprojectionToFile(filtered,file);
-		else save2DBackprojectionToFile(filtered,file,params.printGrayscale);
+		/* Normalize to Final Storage */
+		for (int z = 0; z < VOXEL_RESOLUTION; z++) {
+			for (int y = 0; y < VOXEL_RESOLUTION; y++) {
+				for (int x = 0; x < VOXEL_RESOLUTION; x++) {
+					float val = filtered[x][y][z];
+					
+					if (params.NORMALIZE_TO_UNIT_INTERVAL) {
+						val = Math.min(val / maxIntensityInt, 1f);
+					} else {
+						val = (val/(float)(params.MAX_INTENSITY_MULTIPLIER)) * maxIntensity;
+					}
+					
+					filtered[x][y][z] = val;
+				}
+			}
+		}
+		
+		if (!image) {
+			save3DBackprojectionToFile(filtered, file);
+		} else {
+			save2DBackprojectionToFile(filtered, file, params.printGrayscale);
+		}
 	}
 	
 	/**
@@ -703,7 +729,7 @@ public class TransientVoxelization
 		
 		try {
 			TransientImage[] imgs=null;
-			float maxIntensity=0;
+			maxIntensity=0f;
 			float[][][] transientStorage=null;
 			long ti_streaks=System.currentTimeMillis();
 			
@@ -787,7 +813,7 @@ public class TransientVoxelization
 										recursions=r;break;
 									}
 								}
-								Byte intensity=new Byte((byte)((inf.color[0]/maxIntensity)*params.MAX_INTENSITY_MULTIPLIER));
+								byte intensity=(byte)((inf.color[0]/maxIntensity)*params.MAX_INTENSITY_MULTIPLIER);
 								if(intensity==0) {
 									rejectedEllipsoids[recursions]++;
 									reusableMatrix=ellipsoid.mat;
@@ -1126,15 +1152,19 @@ public class TransientVoxelization
 					break;
 				case "-filename":
 				case "-filename2d":
+					params.saveImage=true;
 					params.filename2d=new File(args[++i]);
 					break;
 				case "-filename2dRaw":
+					params.save2DRaw=true;
 					params.filename2draw=new File(args[++i]);
 					break;
 				case "-filename3d":
+					params.save3DDump=true;
 					params.filename3d=new File(args[++i]);
 					break;
 				case "-filename3dRaw":
+					params.save3DRaw=true;
 					params.filename3draw=new File(args[++i]);
 					break;
 				case "-wallNormal":
@@ -1195,6 +1225,9 @@ public class TransientVoxelization
 				case "-unwarpCamera":
 					params.UNWARP_CAMERA=true;
 					break;
+				case "-saveDumpsUnnormalized":
+					params.NORMALIZE_TO_UNIT_INTERVAL=false;
+          break;
 				case "-disableOverflowProtection":
 					params.ALLOW_OVERFLOW_PROTECTION=false;
 					break;

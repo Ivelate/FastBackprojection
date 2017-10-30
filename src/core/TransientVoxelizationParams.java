@@ -28,8 +28,8 @@ public class TransientVoxelizationParams
 											 //(and next time record just a wall pls)
 	public boolean ALLOW_OVERFLOW_PROTECTION=true; //If a risk of overflow in GPU is detected the program will auto-dump the 3D texture contents into CPU
 	public float CLAMP_INTENSITY_GREATER_THAN=-1; //Max streak intensity threshold to consider, all values above this are discarded (none are discarded if this value is <0)
-	
-	
+	public boolean NORMALIZE_TO_UNIT_INTERVAL=true; //If true, the program will output probabilities in the 0..1 interval regardless of the radiance of the input streaks
+
 	//UNIMPLEMENTED public float CLAMP_TIME_COORD_LESS_THAN=-1; //Min time coord to consider, all values above this are discarded (none are discarded if this value is <0)
 	
 	//Ortho matrix size
