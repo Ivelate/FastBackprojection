@@ -54,6 +54,7 @@ import com.github.ivelate.JavaHDR.RGBE;
 
 import file.AcceptedFileName;
 import file.AcceptedFileName.StreakLaser;
+import file.ConfidenceStorage;
 import file.HDRDecoder;
 import file.LittleEndianDataInputStream;
 import file.TransientImage;
@@ -91,6 +92,8 @@ public class TransientVoxelization
 	private Sphere[] sphereDetailLevels;
 	private int[] rejectedEllipsoids; //Just for info purposes
 	private ScreenQuad visualizationCanvas;
+	
+	private ConfidenceStorage confidenceStorage=new ConfidenceStorage(); //Stores the current calculated probability is GPU can't store it all without overflowing
 	
 	private int voxelStorageTexture;
 	private int finalResultTexture;
@@ -208,15 +211,32 @@ public class TransientVoxelization
 		int intensitiesLoc=glGetAttribLocation(pnShader.getID(),"intensity");
 		GL42.glBindImageTexture(0, this.voxelStorageTexture, 0, true, 0, GL15.GL_WRITE_ONLY, GL30.GL_R32UI);
 		
+		//If overflow protection is enabled, only a safe number of ellipsoids will be rendered before dumping the GPU data into CPU and cleaning the 3D voxel texture
+		int maxEllipsoidsUntilDump=params.ALLOW_OVERFLOW_PROTECTION?(int)(((long)(Integer.MAX_VALUE)*2+1)/params.MAX_INTENSITY_MULTIPLIER):Integer.MAX_VALUE;
+		int ellipsoidsUntilDump=maxEllipsoidsUntilDump;
 		int batchSizeRec=DELAYED_RENDER_BATCH_SIZE;
 		for(int d=0;d<this.sphereDetailLevels.length;d++)
 		{
-			this.sphereDetailLevels[d].draw(this.pnShader, modelMatrixLoc, intensitiesLoc,batchSizeRec/*,params.PERCENT_ELLIPSOIDS_EXTENDED*/);
+			int ellipsoidsToDraw=this.sphereDetailLevels[d].getEllipsoidNumber();
+			while(ellipsoidsToDraw>0)
+			{
+				int drawingAmount=Math.min(ellipsoidsToDraw,ellipsoidsUntilDump);
+				ellipsoidsUntilDump-=drawingAmount;
+				this.sphereDetailLevels[d].draw(this.pnShader, modelMatrixLoc, intensitiesLoc,batchSizeRec,drawingAmount,this.sphereDetailLevels[d].getEllipsoidNumber()-ellipsoidsToDraw);
+				ellipsoidsToDraw-=drawingAmount;
+				if(ellipsoidsUntilDump==0){
+					System.out.println("Dumping GPU voxel data into CPU");
+					this.confidenceStorage.accumulate(get3DTextureData());
+					cleanVoxelStorageTexture();
+					ellipsoidsUntilDump=maxEllipsoidsUntilDump;
+				}
+			}
 			if(batchSizeRec/2!=0) batchSizeRec=batchSizeRec/2;
 		}
 		pnShader.disable();
 		
 		GL11.glFinish();
+		if(!this.confidenceStorage.isEmpty()) this.confidenceStorage.accumulate(get3DTextureData()); //Dumps the data from GPU to CPU if needed
 		int elapsedTime=(int)(System.currentTimeMillis()-startingTime);
 		System.out.println("Fin! Elapsed Time "+elapsedTime+" ms");
 		return elapsedTime;
@@ -241,7 +261,7 @@ public class TransientVoxelization
 	/**
 	 * Returns all int values of the backprojected intensity 3D texture
 	 */
-	public int[] get3DTextureData()
+	private int[] get3DTextureData()
 	{
 		//Sometimes this doesn't work tho, too much memory
 		IntBuffer buff=BufferUtils.createIntBuffer(VOXEL_RESOLUTION*VOXEL_RESOLUTION*VOXEL_RESOLUTION);
@@ -250,6 +270,15 @@ public class TransientVoxelization
 		int[] img3D=new int[buff.limit()];
 		buff.get(img3D);
 		return img3D;
+	}
+	
+	/**
+	 * Wrapper method. Gets the current backprojected intensity 3D data, wether it is on GPU or in CPU. USE ME INSTEAD OF get3DTextureData!!
+	 */
+	public int[] getCurrent3DData()
+	{
+		if(this.confidenceStorage.isEmpty()) return get3DTextureData();
+		else return this.confidenceStorage.contentsToIntegerList();
 	}
 	
 	/**
@@ -262,7 +291,7 @@ public class TransientVoxelization
 	}
 	private void saveFinalTextureToFileCPUApplyDefaultFilters(File file,boolean image) throws IOException
 	{
-		saveFinalTextureToFileCPUApplyDefaultFilters(file,VOXEL_RESOLUTION,image,params.printGrayscale,get3DTextureData());
+		saveFinalTextureToFileCPUApplyDefaultFilters(file,VOXEL_RESOLUTION,image,params.printGrayscale,getCurrent3DData());
 	}
 
 	public float[][][] getFilteredVolumeFromData(int VOXEL_RESOLUTION, int[] data)
@@ -332,7 +361,7 @@ public class TransientVoxelization
 	 */
 	private void saveFinalTextureToFileCPURaw(File file, boolean image) throws IOException
 	{
-		ArrayVoxelContainer container = new ArrayVoxelContainer(VOXEL_RESOLUTION, get3DTextureData());
+		ArrayVoxelContainer container=new ArrayVoxelContainer(VOXEL_RESOLUTION,getCurrent3DData());
 
 		float maxIntensityInt = 0;
 		float[][][] filtered = new float[VOXEL_RESOLUTION][VOXEL_RESOLUTION][VOXEL_RESOLUTION];
@@ -603,15 +632,7 @@ public class TransientVoxelization
 		//Using the maximum precision offered by the current drivers (GL_R32UI), but a 64bit one would be handy if it existed
 		glTexImage3D(GL_TEXTURE_3D,0,GL30.GL_R32UI,VOXEL_RESOLUTION,VOXEL_RESOLUTION,VOXEL_RESOLUTION,0, GL30.GL_RED_INTEGER,GL11.GL_UNSIGNED_INT,(IntBuffer)null);
 		
-		if(params.CLEAR_STORAGE_ON_INIT)
-		{
-			//It is initialized to 0, right? Well, maybe not in all GPUs
-			//This buffer is used to fill the 3D storage with 0s again
-			IntBuffer zeroBuffer=BufferUtils.createIntBuffer(1);
-			zeroBuffer.put(0);
-			zeroBuffer.flip();
-			GL44.glClearTexImage(voxelStorageTexture, 0, GL30.GL_RED_INTEGER,GL11.GL_UNSIGNED_INT, zeroBuffer);
-		}
+		if(params.CLEAR_STORAGE_ON_INIT) cleanVoxelStorageTexture();
 
 
 		//FINAL FRAMEBUFFER
@@ -657,6 +678,19 @@ public class TransientVoxelization
 		GL11.glGetError();	
 		
 		return time;
+	}
+	
+	/**
+	 * Fills the voxel storage texture with 0s
+	 */
+	private void cleanVoxelStorageTexture()
+	{
+		//It is initialized to 0, right? Well, maybe not in all GPUs
+		//This buffer is used to fill the 3D storage with 0s again
+		IntBuffer zeroBuffer=BufferUtils.createIntBuffer(1);
+		zeroBuffer.put(0);
+		zeroBuffer.flip();
+		GL44.glClearTexImage(voxelStorageTexture, 0, GL30.GL_RED_INTEGER,GL11.GL_UNSIGNED_INT, zeroBuffer);
 	}
 	
 	/**
@@ -1191,8 +1225,11 @@ public class TransientVoxelization
 				case "-unwarpCamera":
 					params.UNWARP_CAMERA=true;
 					break;
-				case "-unitProbabilities":
-					params.NORMALIZE_TO_UNIT_INTERVAL=true;
+				case "-saveDumpsUnnormalized":
+					params.NORMALIZE_TO_UNIT_INTERVAL=false;
+          break;
+				case "-disableOverflowProtection":
+					params.ALLOW_OVERFLOW_PROTECTION=false;
 					break;
 				default:
 					System.err.println("Unknown arg "+expr);

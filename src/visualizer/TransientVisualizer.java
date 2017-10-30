@@ -87,7 +87,7 @@ public class TransientVisualizer
 		TM.getDeltaTime();
 		while(!Display.isCloseRequested()&&run)
 		{
-			if(Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) run=false;
+			if(Keyboard.isKeyDown(Keyboard.KEY_ESCAPE) || params.clearAtFirstRender) run=false;
 
 			update(TM.getDeltaTime());
 			render();
