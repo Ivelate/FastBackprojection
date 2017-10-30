@@ -132,6 +132,10 @@ public class Sphere
 	}
 	public void draw(SimpleShaderProgram SSP,int modelMatrixLoc,int intensitiesLoc,int DELAYED_RENDER_BATCH_SIZE/*,float percentEllipsoidsDraw*/)
 	{
+		draw(SSP,modelMatrixLoc,intensitiesLoc,DELAYED_RENDER_BATCH_SIZE,this.ellipsoidNumber,0);
+	}
+	public void draw(SimpleShaderProgram SSP,int modelMatrixLoc,int intensitiesLoc,int DELAYED_RENDER_BATCH_SIZE,int amount,int offset/*,float percentEllipsoidsDraw*/)
+	{
 		if(this.ellipsoidModelMatrixVbo==-1) return;
 		
 		glBindBuffer(GL15.GL_ARRAY_BUFFER,this.ellipsoidModelMatrixVbo);
@@ -156,9 +160,9 @@ public class Sphere
 		
 		if(DELAYED_RENDER_BATCH_SIZE>0)
 		{
-			for(int i=0;i<(int)(this.ellipsoidNumber);i+=DELAYED_RENDER_BATCH_SIZE)
+			for(int i=offset;i<(int)(amount+offset);i+=DELAYED_RENDER_BATCH_SIZE)
 			{
-				int currentDrawSize=Math.min(this.ellipsoidNumber-i,DELAYED_RENDER_BATCH_SIZE);
+				int currentDrawSize=Math.min(amount+offset-i,DELAYED_RENDER_BATCH_SIZE);
 				GL42.glDrawArraysInstancedBaseInstance(GL11.GL_TRIANGLES, 0, this.currentTriangles*3, currentDrawSize, i);
 				GL11.glFinish();
 				if(VERBOSE)System.out.println("(Rec "+SPHERE_RECURSIONS+") - Rendered "+i+" / "+this.ellipsoidNumber);

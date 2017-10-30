@@ -156,7 +156,7 @@ public class MatlabFacade
 		
 		//Let's do this
 		TransientVoxelization tv=new TransientVoxelization(params);
-		int[] data3d=tv.get3DTextureData();
+		int[] data3d=tv.getCurrent3DData();
 		tv.cleanup();
 
 		return data3d;		
