@@ -1227,7 +1227,7 @@ public class TransientVoxelization
 					break;
 				case "-saveDumpsUnnormalized":
 					params.NORMALIZE_TO_UNIT_INTERVAL=false;
-          break;
+					break;
 				case "-disableOverflowProtection":
 					params.ALLOW_OVERFLOW_PROTECTION=false;
 					break;
