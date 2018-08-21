@@ -23,37 +23,37 @@ public class MatlabFacade
 {
 	
 	//Facade for REVEAL, without saving dumps to disk
-	public static int[] performGpuBackprojectionReveal(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,double qualityWeight,String extraArgs[]) throws IOException, LWJGLException
+	public static int[] performGpuBackprojectionReveal(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,double qualityWeight,String extraArgs[]) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,null,qualityWeight,null,null,extraArgs);
 	}
-	public static int[] performGpuBackprojectionReveal(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,double qualityWeight,String infoDumpFile,String extraArgs[]) throws IOException, LWJGLException
+	public static int[] performGpuBackprojectionReveal(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,double qualityWeight,String infoDumpFile,String extraArgs[]) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,null,qualityWeight,infoDumpFile,null,extraArgs);
 	}
 	
 	
-	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize) throws IOException, LWJGLException
+	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,null);
 	}
-	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname) throws IOException, LWJGLException
+	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,dump3Dname,1.0); // Default quality weight = 1
 	}
-	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight) throws IOException, LWJGLException
+	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,dump3Dname,qualityWeight,null);
 	}
-	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile) throws IOException, LWJGLException
+	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,dump3Dname,qualityWeight,infoDumpFile,null);
 	}
-	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile,String dump2Dname) throws IOException, LWJGLException
+	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile,String dump2Dname) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		return performGpuBackprojection(sI,laserpos,camptlist,ilaser_origin,icamera_origin,itpp,itimeshift,orthoM,worldSize,voxelSize,dump3Dname,qualityWeight,infoDumpFile,dump2Dname,null);
 	}
-	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile,String dump2Dname,String[] extraArgs) throws IOException, LWJGLException
+	public static int[] performGpuBackprojection(double[][] sI,double[][]laserpos, double[][] camptlist, double[][] ilaser_origin, double[][] icamera_origin,double[][] itpp, double[][] itimeshift,double[][] orthoM,int[] worldSize,double voxelSize,String dump3Dname,double qualityWeight,String infoDumpFile,String dump2Dname,String[] extraArgs) throws IOException, LWJGLException, UnsupportedOperatingSystemException
 	{
 		//for(int i=0;i<extraArgs.length;i++) System.out.println("Extra args: "+extraArgs[i]);
 		System.out.println("Starting Java part");

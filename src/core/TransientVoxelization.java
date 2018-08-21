@@ -71,7 +71,7 @@ import shader.VoxelizationShader;
  */
 public class TransientVoxelization 
 {
-	private final static String NATIVE_FOLDER_NAME="TransientVoxelizationLibs";
+	private final static String NATIVE_FOLDER_NAME="TransientVoxelizationLibs/native";
 	private final static int CONSERVATIVE_RASTERIZATION_NV=0x9346;
 	private static Random rand = new Random();
 	
@@ -1352,10 +1352,15 @@ public class TransientVoxelization
 	
 	/**
 	 * Load native libraries needed for LWJGL to work
+	 * @throws UnsupportedOperatingSystemException 
 	 */
-	public static final void loadNatives() throws IOException
+	public static final void loadNatives() throws IOException, UnsupportedOperatingSystemException
 	{
 		System.out.println("NATIVE LOAD");
+		//Fetch OS
+		OsCheck.OperatingSystem os= OsCheck.getOperatingSystemType();
+		System.out.println("GETTING "+os.getAsStringName()+" NATIVE LIBS");
+		
 		File nativesFolder=null;
 		try
 		{
@@ -1366,6 +1371,9 @@ public class TransientVoxelization
 			System.out.println("Problem loading natives from path relative to .jar. Loading them from absolute path (execution path)");
 			nativesFolder=new File(NATIVE_FOLDER_NAME);
 		}
+		//Add the OS route
+		nativesFolder=new File(nativesFolder,os.getAsStringName());
+		
 		if(!nativesFolder.exists()||!nativesFolder.isDirectory()||!nativesFolder.canRead()) throw new IOException("Can't read native libraries folder");
 		System.setProperty("org.lwjgl.librarypath", nativesFolder.getAbsolutePath());
 	}
